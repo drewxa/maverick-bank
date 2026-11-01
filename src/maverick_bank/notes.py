@@ -123,7 +123,9 @@ def parse_note(root: Path, path: Path, raw: bytes) -> Note:
     if not metadata.get("scope", "global").strip():
         raise ValueError("Memory scope must not be empty")
     body = "\n".join(lines[body_start - 1 :]).strip()
-    modified = datetime.fromtimestamp(path.stat().st_mtime, UTC).isoformat()
+    modified = (
+        datetime.fromtimestamp(path.stat().st_mtime, UTC).isoformat() if path.exists() else utcnow()
+    )
     return Note(
         memory_id, relative, path, raw, text, body, body_start, metadata, modified, digest(raw)
     )

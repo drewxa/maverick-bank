@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sqlite3
 from contextlib import contextmanager
 from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -17,8 +19,8 @@ from .audit import audit_notes
 from .config import Config
 from .history import History
 from .index import Index
-from .notes import KINDS, STATUSES, Note, digest, scan, utcnow, valid_id
-from .paths import atomic_bytes, confined
+from .notes import KINDS, STATUSES, Note, digest, parse_note, scan, utcnow, valid_id
+from .paths import atomic_bytes, atomic_text, confined
 
 
 class Bank:
@@ -39,15 +41,15 @@ class Bank:
     @classmethod
     def initialize(cls, root: Path, **settings) -> Bank:
         root = Path(root).expanduser().resolve()
-        root.mkdir(parents=True, exist_ok=True)
+        root.mkdir(mode=0o700, parents=True, exist_ok=True)
         state = confined(root, ".maverick")
-        state.mkdir(exist_ok=True)
+        state.mkdir(mode=0o700, exist_ok=True)
         lock_path = confined(state, "bank.lock")
         with FileLock(lock_path, timeout=15):
             path = confined(state, "config.toml")
             if not path.exists():
                 config = Config(**settings).validate(root)
-                confined(root, config.notes_dir).mkdir(parents=True, exist_ok=True)
+                confined(root, config.notes_dir).mkdir(mode=0o700, parents=True, exist_ok=True)
                 config.save(path)
             elif settings:
                 current = Config.load(path, root)
@@ -67,6 +69,7 @@ class Bank:
             "events.jsonl",
             "operations.jsonl",
             "history",
+            "pending",
         ):
             confined(self.state, relative)
         try:
@@ -80,20 +83,91 @@ class Bank:
     def _scan(self):
         return scan(self.root, self.config)
 
-    def _snapshot(self, notes: dict[str, Note]) -> dict:
-        if not self.config.git_enabled:
-            return {"state": "disabled", "commit": None}
+    def _maintenance(self, notes: dict[str, Note], issues: list[dict], scope: str) -> dict:
+        path = confined(self.state, f"audits/{digest(scope.encode())[:24]}.json")
+        performed = True
+        report = None
+        if path.exists():
+            try:
+                report = json.loads(path.read_text(encoding="utf-8"))
+                performed = datetime.fromisoformat(report["at"]) < datetime.now(UTC) - timedelta(
+                    days=self.config.maintenance_interval_days
+                )
+            except (ValueError, KeyError, TypeError):
+                performed = True
+        if performed:
+            selected = {key: note for key, note in notes.items() if note.scope in {scope, "global"}}
+            selected_issues = [issue for issue in issues if issue.get("id") in selected]
+            report = audit_notes(selected, selected_issues, self.config)
+            atomic_text(path, json.dumps(report, ensure_ascii=False))
+        return {
+            "structural_scan_performed": performed,
+            "at": report["at"],
+            "issue_count": report["issue_count"],
+            "candidate_count": report["candidate_count"],
+            "scope": scope,
+            "meaning": "Periodic structural checks only; no claim was revalidated. Use memory_audit with scope and next_offset for source-based semantic review.",
+        }
+
+    def _pending(self):
+        operations, _ = events.read_events(self.operations_path)
+        finished = {item.get("operation_id") for item in operations if item["event"] == "complete"}
+        return [
+            item
+            for item in operations
+            if item["event"] == "pending" and item.get("operation_id") not in finished
+        ]
+
+    def _pending_note(self, operation: dict) -> Note | None:
+        operation_id = operation.get("operation_id", "")
+        if not valid_id(operation_id):
+            raise ValueError("Invalid operation id in recovery journal")
+        payload = confined(self.state, f"pending/{operation_id}.json")
+        if not payload.exists():
+            return None
         try:
-            commit = self.history.snapshot(notes)
-            operations, _ = events.read_events(self.operations_path)
-            finished = {o.get("operation_id") for o in operations if o["event"] == "complete"}
-            for operation in operations:
+            record = json.loads(payload.read_text(encoding="utf-8"))
+            memory_id = operation["id"]
+            if (
+                not valid_id(memory_id)
+                or record["relative"] != f"{self.config.notes_dir}/{memory_id}.md"
+            ):
+                raise ValueError("Invalid pending memory path")
+            raw = record["text"].encode("utf-8")
+            if digest(raw) != operation["revision"]:
+                raise ValueError("Pending memory payload changed; preserve it for manual recovery")
+            return parse_note(self.root, confined(self.root, record["relative"]), raw)
+        except (KeyError, TypeError, json.JSONDecodeError) as exc:
+            raise ValueError("Invalid pending capture payload; preserve it for recovery") from exc
+
+    def _restore_missing_writes(self) -> None:
+        for operation in self._pending():
+            original = self._pending_note(operation)
+            if original and not original.path.exists():
+                atomic_bytes(original.path, original.raw)
+
+    def _snapshot(self, notes: dict[str, Note]) -> dict:
+        try:
+            pending = self._pending()
+            recoverable = set()
+            for operation in pending:
                 note = notes.get(operation.get("id"))
+                original = self._pending_note(operation)
                 if (
-                    operation["event"] == "pending"
-                    and operation["operation_id"] not in finished
-                    and note
-                    and note.revision == operation.get("revision")
+                    note
+                    and original
+                    and note.revision != original.revision
+                    and self.config.git_enabled
+                ):
+                    # Preserve the returned original revision before snapshotting a later human edit.
+                    self.history.snapshot({**notes, original.id: original})
+                    recoverable.add(operation["operation_id"])
+            commit = self.history.snapshot(notes)
+            for operation in pending:
+                note = notes.get(operation.get("id"))
+                if note and (
+                    note.revision == operation.get("revision")
+                    or operation["operation_id"] in recoverable
                 ):
                     events.append(
                         self.operations_path,
@@ -101,7 +175,10 @@ class Bank:
                         operation_id=operation["operation_id"],
                         commit=commit,
                     )
-            return {"state": "saved", "commit": commit}
+                    payload = confined(self.state, f"pending/{operation['operation_id']}.json")
+                    if payload.exists():
+                        payload.unlink()
+            return {"state": "saved" if self.config.git_enabled else "disabled", "commit": commit}
         except ValueError as exc:
             return {"state": "history_pending", "commit": None, "reason": str(exc)}
 
@@ -159,6 +236,7 @@ class Bank:
                 "Git is required before capture. Install Git or explicitly configure git_enabled=false."
             )
         with self.locked():
+            self._restore_missing_writes()
             notes, _, ambiguous = self._scan()
             count = sum(
                 1
@@ -199,6 +277,16 @@ class Bank:
             if len(raw) > self.config.max_note_bytes:
                 raise ValueError("Note exceeds max_note_bytes after UTF-8 encoding")
             path = confined(self.root, f"{self.config.notes_dir}/{memory_id}.md")
+            payload = confined(self.state, f"pending/{operation_id}.json")
+            atomic_text(
+                payload,
+                json.dumps(
+                    {
+                        "relative": path.relative_to(self.root).as_posix(),
+                        "text": raw.decode("utf-8"),
+                    }
+                ),
+            )
             events.append(
                 self.operations_path,
                 "pending",
@@ -234,15 +322,15 @@ class Bank:
             ):
                 raise ValueError("Invalid line range; request 1–400 existing lines")
             selected = []
+            partial_line = False
             for line in lines[start - 1 : end]:
                 if (
                     sum(len(item) + 1 for item in selected) + len(line)
                     > self.config.max_response_chars
                 ):
                     if not selected:
-                        raise ValueError(
-                            "Source line is too long; split the Markdown line before reading"
-                        )
+                        selected.append(line[: self.config.max_response_chars])
+                        partial_line = True
                     break
                 selected.append(line)
             end = start + len(selected) - 1
@@ -264,7 +352,10 @@ class Bank:
                 "excerpt": excerpt,
                 "line_start": start,
                 "line_end": end,
-                "truncated": end < len(lines),
+                "truncated": partial_line or end < len(lines),
+                "partial_line": partial_line,
+                "column_start": 1 if partial_line else None,
+                "column_end": len(excerpt) if partial_line else None,
                 "history": self.history.attribution(note, start, end),
             }
 
@@ -306,19 +397,41 @@ class Bank:
                     issues.append({"code": "changed_during_search", "id": note.id})
                     continue
                 excerpt = candidate["body"]
-                if consumed + len(excerpt) > self.config.max_response_chars:
+                available = self.config.max_response_chars - consumed
+                if available < 32:
                     break
+                line_start, line_end = candidate["line_start"], candidate["line_end"]
+                partial_line, column_start, column_end = False, None, None
+                if len(excerpt) > available:
+                    source_lines = excerpt.splitlines()
+                    tokens = re.findall(r"[^\W_]+", query.casefold())
+                    selected_line = max(
+                        range(len(source_lines)),
+                        key=lambda n: sum(token in source_lines[n].casefold() for token in tokens),
+                    )
+                    source_line = source_lines[selected_line]
+                    hits = [
+                        source_line.casefold().find(token)
+                        for token in tokens
+                        if token in source_line.casefold()
+                    ]
+                    offset = max(0, min(hits, default=0) - available // 4)
+                    excerpt = source_line[offset : offset + available]
+                    line_start = line_end = candidate["line_start"] + selected_line
+                    partial_line = len(excerpt) < len(source_line)
+                    column_start, column_end = offset + 1, offset + len(excerpt)
                 consumed += len(excerpt)
                 results.append(
                     {
                         **note.summary(),
                         "excerpt": excerpt,
-                        "line_start": candidate["line_start"],
-                        "line_end": candidate["line_end"],
+                        "line_start": line_start,
+                        "line_end": line_end,
+                        "partial_line": partial_line,
+                        "column_start": column_start,
+                        "column_end": column_end,
                         "rank_score": candidate["rank_score"],
-                        "history": self.history.attribution(
-                            note, candidate["line_start"], candidate["line_end"]
-                        ),
+                        "history": self.history.attribution(note, line_start, line_end),
                     }
                 )
                 events.append(
@@ -326,8 +439,8 @@ class Bank:
                     "offered",
                     id=note.id,
                     revision=note.revision,
-                    line_start=candidate["line_start"],
-                    line_end=candidate["line_end"],
+                    line_start=line_start,
+                    line_end=line_end,
                     rank=len(results),
                     query_hash=digest(query.encode()),
                 )
@@ -340,6 +453,7 @@ class Bank:
                 "scan_issues": issues[:20],
                 "index": index_state,
                 "history_state": history["state"],
+                "maintenance": self._maintenance(notes, issues, scope),
             }
 
     def _semantic_provider(self):
@@ -405,10 +519,38 @@ class Bank:
             result = self._sync_index(notes)
             return {**result, "issues": issues, "history": self._snapshot(notes)}
 
-    def audit(self) -> dict:
+    def recover(self) -> dict:
+        with self.locked():
+            self._restore_missing_writes()
+            notes, issues, _ = self._scan()
+            return {
+                "history": self._snapshot(notes),
+                "index": self._sync_index(notes),
+                "issues": issues,
+            }
+
+    def audit(
+        self, scope: str | None = None, offset: int = 0, limit: int = 20, all_scopes: bool = False
+    ) -> dict:
+        if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 50:
+            raise ValueError("Audit offset must be nonnegative and limit between 1 and 50")
         with self.locked():
             notes, issues, _ = self._scan()
-            return audit_notes(notes, issues, self.config)
+            scope = scope or self.config.default_scope
+            selected = {
+                key: note
+                for key, note in notes.items()
+                if all_scopes or note.scope in {scope, "global"}
+            }
+            scoped_issues = (
+                issues
+                if all_scopes or scope == "global"
+                else [i for i in issues if i.get("id") in selected]
+            )
+            return {
+                **audit_notes(selected, scoped_issues, self.config, offset, limit),
+                "scope": "all" if all_scopes else scope,
+            }
 
     def stats(self) -> dict:
         with self.locked():
@@ -438,6 +580,7 @@ class Bank:
                 "semantic_enabled": self.config.semantic_enabled,
                 "semantic_model": self.config.semantic_model,
                 "capture_policy": self.config.capture_policy,
+                "maintenance": self._maintenance(notes, issues, self.config.default_scope),
                 "privacy": "No application telemetry, sync or remote inference. Host agents may send offered text to their model providers.",
             }
 

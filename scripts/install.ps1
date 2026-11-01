@@ -27,14 +27,19 @@ if (-not $uvCommand) {
     New-Item -ItemType Directory -Path $uvDirectory -Force | Out-Null
     $uvInstaller = Join-Path $uvDirectory ('uv-install-' + [Guid]::NewGuid().ToString('N') + '.ps1')
     $previousInstall = $env:UV_UNMANAGED_INSTALL
+    $previousModulePath = $env:PSModulePath
     try {
         Write-Host 'Installing uv from the official Astral distribution...'
         Invoke-WebRequest -Uri 'https://astral.sh/uv/0.12.23/install.ps1' -OutFile $uvInstaller -UseBasicParsing
         $env:UV_UNMANAGED_INSTALL = $uvDirectory
-        & powershell -NoProfile -ExecutionPolicy Bypass -File $uvInstaller
+        # PowerShell 7 parents may export incompatible modules to a Windows PowerShell 5 child.
+        $env:PSModulePath = (Join-Path $PSHOME 'Modules') + [IO.Path]::PathSeparator + $previousModulePath
+        $shellExecutable = if ($PSVersionTable.PSEdition -eq 'Core') { Join-Path $PSHOME 'pwsh.exe' } else { Join-Path $PSHOME 'powershell.exe' }
+        & $shellExecutable -NoProfile -ExecutionPolicy Bypass -File $uvInstaller
         if ($LASTEXITCODE -ne 0) { throw 'uv provisioning failed.' }
     } finally {
         $env:UV_UNMANAGED_INSTALL = $previousInstall
+        $env:PSModulePath = $previousModulePath
         if (Test-Path -LiteralPath $uvInstaller) { Remove-Item -LiteralPath $uvInstaller }
     }
     $uvExecutable = Join-Path $uvDirectory 'uv.exe'

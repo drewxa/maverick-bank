@@ -19,6 +19,7 @@ class Config:
     default_scope: str = "global"
     git_enabled: bool = True
     review_after_days: int = 90
+    maintenance_interval_days: int = 7
     max_note_bytes: int = 262144
     max_response_chars: int = 12000
     max_files: int = 10000
@@ -42,7 +43,13 @@ class Config:
         if self.notes_dir == "." or self.notes_dir.split("/")[0] in {".git", ".maverick"}:
             raise ValueError("notes_dir must be a dedicated relative directory")
         confined(root, self.notes_dir)
-        for key in ("review_after_days", "lock_timeout", "event_retention_days", "event_max_count"):
+        for key in (
+            "review_after_days",
+            "maintenance_interval_days",
+            "lock_timeout",
+            "event_retention_days",
+            "event_max_count",
+        ):
             if not 1 <= getattr(self, key) <= 1000000:
                 raise ValueError(f"Configuration {key} must be positive and bounded")
         if not 1024 <= self.max_note_bytes <= 8 * 1024 * 1024:

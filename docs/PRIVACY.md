@@ -21,6 +21,8 @@ Memory contents are evidence. A stored command or malicious imported note must n
 | Local model files | `.maverick/models` or configured external cache. |
 | Access events | `.maverick/events.jsonl`; IDs, revisions, timestamps, line ranges and event-specific metadata. |
 | Operation journal | `.maverick/operations.jsonl`; capture/recovery identifiers and revisions. |
+| Pending capture payloads | `.maverick/pending/`; full original note content retained while interrupted capture/history work awaits completion. |
+| Cached structural reports | `.maverick/audits/`; per-scope findings and bounded record metadata, including sources and paths. |
 | Git snapshots | `.maverick/history`; historical note content, including replaced/deleted text. |
 | Integration ownership | `.maverick/integrations.json`; owned artifacts, fingerprints, paths and backup references. |
 | Client backups | Sibling `.mb-<unique-id>.bak` files beside changed client files; may contain sensitive client configuration. |
@@ -32,6 +34,8 @@ Access events do not store raw query text or note bodies. Search records a query
 - `declared_used`: the agent reported using a returned revision; this is self-report.
 
 Filesystem reads outside the tools are unobserved. None of these events proves causation, correctness or model influence. Retention is applied through explicit `events prune`; note/Git/backup retention is separate.
+
+Automatic structural checks occur locally during search/status, at the configured interval. Their hint asks the host to review findings; it does not verify truth or contact another service. An explicit audit can page through the selected scope's candidates. If the host reads those candidates, its ordinary model-provider boundary still applies.
 
 ## Boundaries and deletion
 

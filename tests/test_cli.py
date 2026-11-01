@@ -53,3 +53,20 @@ def test_environment_selects_bank_without_modifying_other_banks(tmp_path):
     env = {**os.environ, "MAVERICK_BANK_HOME": str(root)}
     assert command("init", env=env).returncode == 0
     assert json.loads(command("status", env=env).stdout)["root"] == str(root.resolve())
+
+
+def test_doctor_reports_broken_registered_client_even_if_direct_mcp_works(tmp_path):
+    from test_bank import bank_class
+
+    from maverick_bank.integrations import install_clients
+
+    bank = bank_class().initialize(tmp_path / "bank")
+    home = tmp_path / "profile"
+    install_clients(bank.root, ["codex"], home=home, codex_home=home / ".codex")
+    (home / ".codex/config.toml").unlink()
+    result = command("doctor", "--bank", bank.root, "--mcp")
+    assert result.returncode == 1
+    report = json.loads(result.stdout)
+    assert report["clients"]["status"] == "attention"
+    assert report["checks"]["client_registrations"] is False
+    assert report["mcp"]["connected"] is True

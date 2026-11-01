@@ -85,3 +85,35 @@ def test_torn_utf8_journal_tail_preserves_previous_events_and_next_append(tmp_pa
     bank.read(saved["id"])
     assert bank.stats()["events"]["read"] == 1
     assert bank.stats()["invalid_journal_lines"] == 1
+
+
+def test_failed_post_write_snapshot_preserves_original_revision_after_manual_edit(
+    tmp_path, monkeypatch
+):
+    bank = bank_class().initialize(tmp_path / "bank")
+    real_snapshot = bank.history.snapshot
+    calls = 0
+
+    def fail_after_write(notes):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise ValueError("Injected disk interruption")
+        return real_snapshot(notes)
+
+    monkeypatch.setattr(bank.history, "snapshot", fail_after_write)
+    saved = bank.remember("Recovery", "Original unsaved evidence", source="user:1")
+    assert saved["history"]["state"] == "history_pending"
+    path = Path(saved["path"])
+    original = path.read_bytes()
+    path.write_bytes(original.replace(b"Original unsaved evidence", b"Later manual evidence"))
+    monkeypatch.setattr(bank.history, "snapshot", real_snapshot)
+    bank.search("manual")
+    commits = bank.history.command("log", "--all", "--format=%H").stdout.splitlines()
+    snapshots = [
+        bank.history.command("show", f"{commit}:{saved['relative_path']}").stdout.encode("utf-8")
+        for commit in commits
+    ]
+    assert original in snapshots
+    assert "Later manual evidence" in bank.read(saved["id"])["body"]
+    assert bank.status()["pending_operations"] == []

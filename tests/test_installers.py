@@ -25,7 +25,15 @@ def test_platform_installer_help_does_not_install_or_require_prerequisites(tmp_p
     else:
         command = ["sh", str(PROJECT / "scripts/install.sh"), "--help"]
     result = subprocess.run(
-        command, capture_output=True, encoding="utf-8", timeout=30, cwd=tmp_path
+        command,
+        capture_output=True,
+        encoding="utf-8",
+        timeout=30,
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PSModuleAnalysisCachePath": str(tmp_path.parent / "ps-module-cache.bin"),
+        },
     )
     assert result.returncode == 0, result.stderr
     assert "source" in result.stdout.lower()
@@ -47,6 +55,8 @@ def test_real_installer_is_idempotent_and_uses_isolated_profiles(tmp_path):
         **os.environ,
         "HOME": str(home),
         "USERPROFILE": str(home),
+        "LOCALAPPDATA": str(home / "AppData/Local"),
+        "APPDATA": str(home / "AppData/Roaming"),
         "CODEX_HOME": str(home / ".codex"),
         "CLAUDE_CONFIG_DIR": str(home / ".claude"),
         "UV_TOOL_DIR": str(home / "tools"),

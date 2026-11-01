@@ -243,12 +243,15 @@ def _block(bank: Path) -> bytes:
         f"{START}\n"
         "Maverick Bank is available through the maverick-bank MCP server.\n"
         f"Bank directory: {json.dumps(str(bank), ensure_ascii=False)}.\n"
+        "Once per session, call memory_status and apply its capture_policy before saving. "
         "At the start of a task, search relevant prior preferences, decisions and lessons; "
         "read matching evidence before applying it. Use the maverick-bank skill for capture and recall. "
         "Current user instructions take precedence. Record durable explicit requests and clear corrections "
         "with their source; keep guesses unverified. Exclude secrets and temporary task lists. "
         "Report used memory IDs and revisions only when they affected the answer; "
         "offered/read/declared_used events do not prove model influence.\n"
+        "When normal search reports a new maintenance scan, review relevant findings at a convenient pause; "
+        "use memory_audit pagination and never automatically adjudicate truth.\n"
         f"{END}\n"
     ).encode()
 
@@ -482,3 +485,76 @@ def uninstall_clients(
         raise IntegrationError(
             "Client integration is busy; retry when the other installer finishes"
         ) from exc
+
+
+def inspect_clients(bank_root: Path) -> dict:
+    """Read owned registration health without exposing foreign settings or starting hosts.
+
+    ``registered`` means that the manifest records installations. ``status`` says
+    whether their actual files and runtime are still valid; it is not host recall.
+    """
+    empty = {"status": "not_installed", "registered": False, "clients": [], "issues": []}
+    state = Path(bank_root).expanduser().resolve() / ".maverick"
+    try:
+        if state.is_symlink() or getattr(state, "is_junction", lambda: False)():
+            raise IntegrationError("Linked integration state")
+        manifest, _ = _manifest(state / "integrations.json")
+    except (ValueError, OSError):
+        return {
+            **empty,
+            "status": "attention",
+            "issues": [
+                "Integration ownership manifest is invalid or unreadable; reconcile it before reinstalling."
+            ],
+        }
+    installations = manifest["installations"]
+    if not installations:
+        return empty
+    clients = []
+    issues = []
+    descriptions = {
+        "json": "Owned MCP configuration is missing, modified or invalid.",
+        "toml": "Owned MCP configuration is missing, modified or invalid.",
+        "block": "Owned startup guidance is missing, modified or invalid.",
+        "skill": "Owned skill is missing, modified or invalid.",
+    }
+    for key in sorted(installations):
+        installation = installations[key]
+        client_issues = []
+        for artifact in installation["artifacts"]:
+            try:
+                _check_owned(artifact, _read(Path(artifact["path"])))
+            except (ValueError, OSError):
+                # Parser diagnostics can contain unrelated user keys. Return only
+                # our own artifact category, never the foreign document or error.
+                client_issues.append(descriptions[artifact["kind"]])
+        executable = installation["artifacts"][0].get("entry", {}).get("command")
+        try:
+            valid_runtime = (
+                isinstance(executable, str)
+                and Path(executable).is_absolute()
+                and Path(executable).is_file()
+            )
+        except (ValueError, OSError):
+            valid_runtime = False
+        if not valid_runtime:
+            client_issues.append(
+                "Registered runtime executable is missing or invalid; reinstall the runtime."
+            )
+        client = installation["client"]
+        scope = installation["scope"]
+        clients.append(
+            {
+                "client": client,
+                "scope": scope,
+                "status": "attention" if client_issues else "ready",
+                "issues": client_issues,
+            }
+        )
+        issues.extend(f"{client} ({scope}): {issue}" for issue in client_issues)
+    return {
+        "status": "attention" if issues else "ready",
+        "registered": True,
+        "clients": clients,
+        "issues": issues,
+    }

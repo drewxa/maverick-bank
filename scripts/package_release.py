@@ -17,6 +17,7 @@ TOP_FILES = {
     "pyproject.toml",
     "uv.lock",
     ".gitignore",
+    ".gitattributes",
 }
 DIRECTORIES = {"src", "tests", "scripts", "docs", ".github"}
 EXTENSIONS = {".py", ".md", ".toml", ".yml", ".yaml", ".sh", ".ps1", ".json"}

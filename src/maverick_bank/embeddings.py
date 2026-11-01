@@ -58,6 +58,16 @@ def model_artifact(cache: Path, model_dir: Path, relative: str) -> Path:
     return resolved
 
 
+def model_fingerprints(cache: Path, model_dir: Path) -> dict[str, str]:
+    return {
+        path.relative_to(model_dir).as_posix(): _file_hash(
+            model_artifact(cache, model_dir, path.relative_to(model_dir).as_posix())
+        )
+        for path in sorted(model_dir.rglob("*"))
+        if path.is_file()
+    }
+
+
 def provision(state: Path, model: str, configured_cache: str = "") -> dict:
     TextEmbedding = _text_embedding()
     if model not in {item["model"] for item in TextEmbedding.list_supported_models()}:
@@ -80,11 +90,7 @@ def provision(state: Path, model: str, configured_cache: str = "") -> dict:
         model_dir = Path(embedding.model._model_dir).resolve()
         if not model_dir.is_relative_to(cache.resolve()):
             raise ValueError("Downloaded model escaped its configured cache")
-        files = {}
-        for path in sorted(model_dir.rglob("*")):
-            if path.is_file() and path.suffix in {".onnx", ".json", ".txt", ".data"}:
-                relative = path.relative_to(model_dir).as_posix()
-                files[relative] = _file_hash(model_artifact(cache, model_dir, relative))
+        files = model_fingerprints(cache, model_dir)
         if not any(path.endswith(".onnx") for path in files):
             raise ValueError("Provisioning did not produce an ONNX model")
         identity = digest(

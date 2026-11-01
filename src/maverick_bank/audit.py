@@ -9,7 +9,9 @@ from .config import Config
 from .notes import Note, digest, utcnow
 
 
-def audit_notes(notes: dict[str, Note], issues: list[dict], config: Config) -> dict:
+def audit_notes(
+    notes: dict[str, Note], issues: list[dict], config: Config, offset: int = 0, limit: int = 20
+) -> dict:
     findings = list(issues)
     content: dict[str, list[str]] = {}
     cutoff = datetime.now(UTC) - timedelta(days=config.review_after_days)
@@ -59,18 +61,27 @@ def audit_notes(notes: dict[str, Note], issues: list[dict], config: Config) -> d
             findings.append(
                 {
                     "code": "duplicate_content",
-                    "ids": ids,
+                    "ids": ids[:50],
+                    "count": len(ids),
                     "action": "review; similar content may have different scopes or independent sources",
                 }
             )
-    candidates = [note.summary() for note in notes.values() if not note.superseded_by]
+    candidates = [notes[key].summary() for key in sorted(notes) if not notes[key].superseded_by]
     return {
         "at": utcnow(),
         "notes": len(notes),
-        "issues": findings,
+        "issues": findings[:50],
+        "issue_count": len(findings),
+        "issues_truncated": len(findings) > 50,
         "semantic_review": "host_agent_required",
         "writes_applied": 0,
         "review_instructions": "Read cited revisions before judging. Separate explicit user statements, observations and inferences. Compare scope and validity time; newest text does not automatically win. Repetition is not independent evidence. Propose corrections as new superseding notes; never delete or promote truth solely from age or usage.",
-        "review_candidates": candidates[:50],
-        "candidates_truncated": len(candidates) > 50,
+        "review_candidates": candidates[offset : offset + limit],
+        "candidates_truncated": offset + limit < len(candidates),
+        "candidate_count": len(candidates),
+        "offset": offset,
+        "next_offset": offset + limit if offset + limit < len(candidates) else None,
+        "dataset_revision": digest(
+            "\n".join(f"{key}:{notes[key].revision}" for key in sorted(notes)).encode()
+        ),
     }

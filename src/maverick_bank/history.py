@@ -124,16 +124,44 @@ class History:
         )
         if output.returncode:
             return result
-        times = []
+        attributions = []
+        current = None
         for line in output.stdout.splitlines():
-            if line.startswith("committer-time "):
-                times.append(int(line.split()[1]))
-            elif len(line.split()) == 4 and len(line.split()[0]) == 40:
-                result["commit"] = line.split()[0]
-        if times:
-            from datetime import datetime
+            parts = line.split()
+            if (
+                not line.startswith("\t")
+                and len(parts) in {3, 4}
+                and len(parts[0]) == 40
+                and all(c in "0123456789abcdef" for c in parts[0])
+            ):
+                current = {
+                    "commit": parts[0],
+                    "line_start": int(parts[2]),
+                    "line_end": int(parts[2]),
+                }
+            elif line.startswith("committer-time ") and current is not None:
+                from datetime import datetime
 
-            result["text_changed_at"] = datetime.fromtimestamp(max(times), UTC).isoformat()
+                current["text_changed_at"] = datetime.fromtimestamp(int(parts[1]), UTC).isoformat()
+            elif line.startswith("\t") and current is not None:
+                if (
+                    attributions
+                    and attributions[-1]["commit"] == current["commit"]
+                    and attributions[-1]["line_end"] + 1 == current["line_start"]
+                ):
+                    attributions[-1]["line_end"] = current["line_end"]
+                else:
+                    attributions.append(current)
+                current = None
+        if attributions:
+            result.update(
+                {
+                    "commit": attributions[0]["commit"],
+                    "text_changed_at": attributions[0]["text_changed_at"],
+                    "attributions": attributions,
+                    "meaning": "Primary attribution is the first source line; attributions lists the other line groups. Text history is not verification or validity.",
+                }
+            )
         return result
 
     def log(self, limit: int = 20) -> dict:

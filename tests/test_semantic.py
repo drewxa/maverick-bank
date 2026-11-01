@@ -94,3 +94,18 @@ def test_huggingface_cache_symlinks_are_allowed_only_inside_cache(tmp_path):
     link.symlink_to(outside)
     with pytest.raises(ValueError):
         model_artifact(cache, model, "model.onnx")
+
+
+def test_pinned_fingerprints_include_external_onnx_weights(tmp_path):
+    try:
+        from maverick_bank.embeddings import model_fingerprints
+    except ImportError:
+        pytest.fail("Full model artifact pinning is not implemented")
+    model = tmp_path / "snapshot"
+    model.mkdir()
+    (model / "model.onnx").write_bytes(b"graph")
+    (model / "model.onnx_data").write_bytes(b"external weights")
+    before = model_fingerprints(tmp_path, model)
+    assert "model.onnx_data" in before
+    (model / "model.onnx_data").write_bytes(b"different weights")
+    assert model_fingerprints(tmp_path, model)["model.onnx_data"] != before["model.onnx_data"]

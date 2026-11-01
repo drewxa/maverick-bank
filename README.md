@@ -24,6 +24,8 @@ sh scripts/install.sh --source . --clients codex claude
 
 The scripts provision uv when needed, install the package and configure selected clients. Choose only `codex` or `claude` if you use one. The default bank is `~/.maverick-bank`; choose another with `-Bank "path"` on Windows or `--bank "path"` on macOS/Ubuntu. A downloaded wheel can be supplied as the source instead. Git history stays local.
 
+For a custom bank, subsequent CLI commands must use the same `--bank PATH` or set `MAVERICK_BANK_HOME` to that directory.
+
 From a source checkout with [uv](https://docs.astral.sh/uv/) already installed:
 
 ```sh
@@ -33,7 +35,7 @@ maverick-bank install --clients codex claude --scope user
 maverick-bank doctor
 ```
 
-Restart your agent client. Approve its normal workspace/MCP permissions if prompted. Client configuration alone does not prove a live connection; [integration details](docs/INTEGRATIONS.md) explain files and verification.
+Restart your agent client. Approve its normal workspace/MCP permissions if prompted. Startup guidance asks the agent to read `memory_status` once per session and apply your configured recording policy. Client configuration alone does not prove a live connection; [integration details](docs/INTEGRATIONS.md) explain files and verification.
 
 ## First useful memory
 
@@ -68,13 +70,13 @@ A fresh installation can use `uv tool install '.[semantic]'`. The default multil
 
 ## Keep memory useful
 
-Ask your agent periodically:
+Normal search/status performs a per-scope structural check on first use and when due (every seven days by default), then hints to the agent to review relevant findings. This does not verify claims or change notes. You can also ask:
 
 > Audit Maverick Bank. Read the cited revisions and review candidates for duplicates, conflicting scope/time, missing evidence and claims needing a fresh check. Separate user statements from inference. Propose corrections with sources; do not delete, merge or mark claims confirmed automatically.
 
-`audit` finds checkable issues and supplies candidates for agent review; it does not determine truth. Corrections create new records linked through `supersedes`. Usage counts distinguish offered text, served reads and agent-declared use; they do not prove model influence.
+`audit` supplies scoped, paginated candidates for agent review; it does not determine truth. Follow `next_offset`, restarting if `dataset_revision` changes. Corrections create new records linked through `supersedes`. Usage counts distinguish offered text, served reads and agent-declared use; they do not prove model influence.
 
-Edit notes directly under `notes/`. Search refreshes changed files; `maverick-bank reindex` rebuilds the disposable index. Local Git snapshots live separately under `.maverick/history`, including prior note content. [Configuration and backup](docs/CONFIGURATION.md) cover maintenance and recovery.
+Edit notes directly under `notes/`. Search refreshes changed files; `maverick-bank reindex` rebuilds the disposable index. Local Git snapshots live separately under `.maverick/history`, including prior note content. After an interrupted capture, `maverick-bank recover` restores missing pending writes without overwriting human edits and retries history/index updates. [Configuration and backup](docs/CONFIGURATION.md) cover maintenance and recovery.
 
 ## Privacy and removal
 

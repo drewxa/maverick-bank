@@ -3,12 +3,22 @@
 from __future__ import annotations
 
 import os
+import stat
 import tempfile
 from pathlib import Path, PureWindowsPath
 
 
 def linked(path: Path) -> bool:
-    return path.is_symlink() or bool(getattr(path, "is_junction", lambda: False)())
+    if path.is_symlink() or bool(getattr(path, "is_junction", lambda: False)()):
+        return True
+    try:
+        # Python 3.11 lacks Path.is_junction; do not descend through Windows reparse points.
+        return bool(
+            getattr(path.lstat(), "st_file_attributes", 0)
+            & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+        )
+    except FileNotFoundError:
+        return False
 
 
 def confined(root: Path, relative: str) -> Path:

@@ -30,6 +30,7 @@ Edit `<bank>/.maverick/config.toml` while the bank is idle, then restart connect
 | `default_scope` | `"global"` | Scope used when search does not supply one. |
 | `git_enabled` | `true` | Local sidecar snapshots; capture requires Git when enabled. |
 | `review_after_days` | `90` | Age that triggers review, not an expiry or truth judgment. |
+| `maintenance_interval_days` | `7` | Minimum interval between automatic per-scope structural checks during search/status. |
 | `max_note_bytes` | `262144` | Maximum UTF-8 record size, including metadata. |
 | `max_response_chars` | `12000` | Bound on returned content. |
 | `max_files` | `10000` | Maximum Markdown files scanned. |
@@ -40,6 +41,8 @@ Edit `<bank>/.maverick/config.toml` while the bank is idle, then restart connect
 | `semantic_model` | `"sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"` | Local embedding model identifier. |
 | `semantic_cache_dir` | `""` | Empty uses `<bank>/.maverick/models`; an absolute path selects another cache. |
 | `capture_policy` | Explicit requests and clear corrections; exclude secrets, raw transcripts, temporary tasks and unconfirmed inferred preferences. | Guidance exposed to agents; not an automatic secret filter. |
+
+Installed startup guidance asks the host to read `memory_status` once per session before capture and apply the returned `capture_policy`. Customize that setting to narrow what the agent should record. This is host guidance, not a hard content filter; verify behavior in a fresh session after changing it.
 
 Positive day/count/timeout settings are bounded at 1–1,000,000. Note sizes allow 1,024–8,388,608 bytes; response size allows 256–100,000 characters; file count allows 1–100,000. Raising limits increases work and memory use. Search accepts 1–20 results, default 5.
 
@@ -71,20 +74,26 @@ An external absolute cache can share model files across banks. Keep it private a
 ## Maintenance
 
 ```sh
-maverick-bank audit
+maverick-bank audit --scope project:reporting-tool --offset 0 --limit 20
 maverick-bank stats
 maverick-bank history
 maverick-bank reindex
 maverick-bank events prune
 ```
 
-Audit reports malformed notes, missing sources, duplicate content/IDs, supersession errors and review-age findings. Meaningful conflicts need host-agent review of the actual revisions; audit applies no corrections. Candidate lists are bounded, so a single audit is not proof that every pair of notes was compared. `stats` reports local observations, not proven model benefit.
+On first search/status use, then when `maintenance_interval_days` has elapsed, a structural check runs for the selected scope plus global records. Search uses its requested scope; status uses `default_scope`. Results include a compact `maintenance` hint, and reports are cached under `.maverick/audits/`. There is no background scheduler, claim revalidation or automatic editing. Startup guidance asks the host to review relevant findings at a convenient pause.
+
+Explicit audit reports malformed notes, missing sources, duplicate content/IDs, supersession errors and review-age findings. It uses the requested scope plus global records, or `--all-scopes` when deliberately requested. Review candidates default to 20 per page; `--limit` allows 1–50 and `--offset` is nonnegative. Repeat with the returned `next_offset` until it is null. Compare `dataset_revision` between pages; restart from offset 0 if the dataset changed. Findings can be truncated separately, as reported by `issue_count`/`issues_truncated`.
+
+Meaningful conflicts need host-agent review of the actual revisions; audit applies no corrections. Even a completed traversal is not proof that every possible semantic relationship was checked. `stats` reports local observations, not proven model benefit.
 
 Search refreshes external edits/deletions. `reindex` recreates the disposable SQLite index and preserves notes, events, configuration and history. `events prune` applies retention limits explicitly; it is not a scheduled background purge and does not prune notes, operation history, Git or external backups. Export a journal first if long-term usage evidence matters.
 
 ## Local history, backup and restore
 
 Snapshots live in `<bank>/.maverick/history`, an isolated Git repository containing note snapshots. The bank does not stage your project's repository, use its hooks/filters or push. Supported bank operations capture observed note changes; this is not a continuous filesystem watcher and cannot preserve an edit made and reverted between observations. Git dates do not establish when a real-world fact was last checked.
+
+Capture stages its original payload under `.maverick/pending/` before writing the authoritative note. If Git fails and the note is later edited, recovery can retain the original capture and the human-edited version in history. After fixing the underlying Git/disk error, run `maverick-bank recover`. It restores missing pending note files without overwriting existing human edits, then retries history and index updates. Inspect its result and `status` before retrying capture. Preserve pending payloads and the operation journal until recovery completes; explicit `git_enabled = false` disables versioned history.
 
 For a complete backup, close agent sessions and other bank writers, then copy the **entire bank directory**, including hidden `.maverick`, to a private backup destination. Include an external model cache separately if you need offline restore. Models/indexes can be regenerated; notes, configuration, journals and Git history cannot be reconstructed from an index. Client configuration backups live beside client files, not inside the bank.
 

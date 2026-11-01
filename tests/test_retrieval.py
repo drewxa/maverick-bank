@@ -86,3 +86,14 @@ def test_imports_are_unverified_and_duplicate_ids_are_quarantined(tmp_path):
     with pytest.raises(ValueError, match="ambiguous"):
         bank.read(saved["id"])
     assert any(i["code"] == "duplicate_id" for i in bank.audit()["issues"])
+
+
+def test_matching_long_line_returns_honestly_bounded_evidence(tmp_path):
+    bank = bank_class().initialize(tmp_path / "bank", max_response_chars=256)
+    saved = bank.remember("Long line", "needle " + "x" * 300, source="user:1")
+    result = bank.search("needle")["results"][0]
+    assert result["id"] == saved["id"]
+    assert "needle" in result["excerpt"]
+    assert len(result["excerpt"]) <= 256
+    assert result["partial_line"] is True
+    assert result["column_end"] - result["column_start"] + 1 == len(result["excerpt"])

@@ -59,8 +59,13 @@ def parser() -> argparse.ArgumentParser:
     use.add_argument("--agent", default="unknown")
     use.add_argument("--task-id", default="")
     use.add_argument("--outcome", default="unknown")
-    for name in ("reindex", "audit", "stats", "status", "history"):
+    for name in ("reindex", "recover", "stats", "status", "history"):
         sub(name, f"Show or perform {name}")
+    audit = sub("audit", "Review scoped evidence with bounded pagination")
+    audit.add_argument("--scope")
+    audit.add_argument("--offset", type=int, default=0)
+    audit.add_argument("--limit", type=int, default=20)
+    audit.add_argument("--all-scopes", action="store_true")
     doctor = sub("doctor", "Diagnose core prerequisites and optional semantic state")
     doctor.add_argument(
         "--mcp", action="store_true", help="Also launch an actual stdio MCP subprocess"
@@ -100,6 +105,7 @@ def diagnose(bank: Bank, mcp: bool) -> dict:
     import asyncio
 
     from .embeddings import load_provider
+    from .integrations import inspect_clients
 
     status = bank.status()
     with closing(sqlite3.connect(":memory:")) as db:
@@ -110,9 +116,12 @@ def diagnose(bank: Bank, mcp: bool) -> dict:
         "history": not status["pending_operations"],
         "notes": not status["issues"],
     }
+    clients = inspect_clients(bank.root)
+    checks["client_registrations"] = clients["status"] != "attention"
     result = {
         **status,
         "checks": checks,
+        "clients": clients,
         "ready": all(checks.values()),
         "semantic_status": "not_configured",
         "next": "Start a new agent session after install; verify scoped recall of a sourced note.",
@@ -194,8 +203,12 @@ def main(argv: list[str] | None = None) -> int:
                         arguments.agent,
                         arguments.outcome,
                     )
-                case "reindex" | "audit" | "stats" | "status":
+                case "reindex" | "recover" | "stats" | "status":
                     result = getattr(bank, arguments.command)()
+                case "audit":
+                    result = bank.audit(
+                        arguments.scope, arguments.offset, arguments.limit, arguments.all_scopes
+                    )
                 case "history":
                     with bank.locked():
                         result = bank.history.log()

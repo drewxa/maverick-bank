@@ -326,3 +326,77 @@ def test_claude_custom_config_directory_is_used_for_all_user_artifacts(env, monk
     assert not (home / ".claude").exists()
     api().uninstall_clients(bank, ["claude"], home=home)
     assert not (custom / ".claude.json").exists()
+
+
+def test_inspect_clients_distinguishes_healthy_and_cli_only_banks(env):
+    bank, home = env
+    module = api()
+    assert module.inspect_clients(bank) == {
+        "status": "not_installed",
+        "registered": False,
+        "clients": [],
+        "issues": [],
+    }
+    module.install_clients(bank, ["codex", "claude"], home=home)
+    result = module.inspect_clients(bank)
+    assert result["status"] == "ready"
+    assert result["registered"] is True
+    assert {entry["client"] for entry in result["clients"]} == {"codex", "claude"}
+    assert result["issues"] == []
+    module.uninstall_clients(bank, ["codex", "claude"], home=home)
+    assert module.inspect_clients(bank)["status"] == "not_installed"
+
+
+def test_inspect_clients_detects_deleted_config_without_leaking_foreign_settings(env):
+    bank, home = env
+    module = api()
+    module.install_clients(bank, ["codex", "claude"], home=home)
+    (home / ".codex/config.toml").unlink()
+    claude_config = home / ".claude.json"
+    data = json.loads(claude_config.read_text(encoding="utf-8"))
+    data["credentials"] = "unrelated-private-test-value"
+    claude_config.write_text(json.dumps(data), encoding="utf-8")
+    result = module.inspect_clients(bank)
+    assert result["status"] == "attention"
+    assert any(
+        entry["client"] == "codex" and entry["status"] == "attention" for entry in result["clients"]
+    )
+    assert any(
+        entry["client"] == "claude" and entry["status"] == "ready" for entry in result["clients"]
+    )
+    assert result["issues"]
+    assert "unrelated-private-test-value" not in json.dumps(result)
+
+
+def test_inspect_clients_reports_missing_runtime_without_starting_it(env):
+    bank, home = env
+    module = api()
+    nonexistent = str((home / "deleted runtime/python.exe").resolve())
+    module.install_clients(bank, ["codex"], home=home, python=nonexistent)
+    result = module.inspect_clients(bank)
+    assert result["status"] == "attention"
+    assert result["registered"] is True
+    assert any(
+        "runtime" in issue.lower() or "executable" in issue.lower() for issue in result["issues"]
+    )
+
+
+def test_inspect_clients_reports_modified_owned_guidance_and_skill(env):
+    bank, home = env
+    module = api()
+    module.install_clients(bank, ["claude"], home=home)
+    (home / ".claude/rules/maverick-bank.md").write_text("changed instruction")
+    (home / ".claude/skills/maverick-bank/SKILL.md").write_text("changed skill")
+    result = module.inspect_clients(bank)
+    assert result["status"] == "attention"
+    assert len(result["issues"]) == 2
+
+
+def test_inspect_clients_reports_invalid_manifest_without_traceback(env):
+    bank, _ = env
+    (bank / ".maverick").mkdir()
+    (bank / ".maverick/integrations.json").write_text('{"version":99}')
+    result = api().inspect_clients(bank)
+    assert result["status"] == "attention"
+    assert result["registered"] is False
+    assert result["issues"]

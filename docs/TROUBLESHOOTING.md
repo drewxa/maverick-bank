@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Start with `maverick-bank doctor --bank "path/to/bank"` and `maverick-bank status --bank "path/to/bank"`, using your actual path. Keep diagnostic output private until redacted. `doctor` checks product/runtime state; it is not proof that an authenticated model used memory.
+Start with `maverick-bank doctor --bank "path/to/bank"` and `maverick-bank status --bank "path/to/bank"`, using your actual path. `doctor` checks bank/runtime state and owned client registrations; add `--mcp` for a real local stdio protocol smoke check. These checks do not prove that an authenticated model used memory. Keep diagnostic output private until redacted.
 
 | Symptom | Next action |
 | --- | --- |
@@ -13,7 +13,10 @@ Start with `maverick-bank doctor --bank "path/to/bank"` and `maverick-bank statu
 | A changed/deleted note appears wrong | Search again, then run `reindex`; inspect scan findings. Use a returned current ID/revision rather than an old cached result. |
 | Record ID is ambiguous | Audit duplicate IDs. Review both files and preserve a backup before assigning distinct IDs or correcting the content. Do not arbitrarily discard a source. |
 | Invalid configuration / future schema | Fix TOML types/bounds or use a compatible newer product. Back up configuration; do not lower the schema number to bypass validation. |
-| `history_pending` or pending capture | The note may already exist. Preserve it, resolve the Git/disk error, then search/read or reindex to retry snapshots. Inspect status before reissuing capture and creating a duplicate. |
+| `history_pending` or pending capture | Preserve the note, `.maverick/pending` payloads and operation journal. Resolve the Git/disk error, then run `maverick-bank recover` with the same bank. It restores missing pending writes without overwriting human edits and retries history/index updates. Inspect status before reissuing capture and creating a duplicate. |
+| Recording policy seems ignored | Start a fresh session and require `memory_status` before capture. Check its returned `capture_policy`; the setting is agent guidance, not a hard content filter. |
+| Audit shows only part of the bank | Check scope and follow `next_offset` with `--offset`; restart if `dataset_revision` changes. Candidate pagination and truncated findings are reported separately. |
+| No new automatic maintenance scan | The last per-scope scan may still be within `maintenance_interval_days` (default 7). Call explicit `audit` for current findings. Structural checks are not claim verification. |
 | Journal contains malformed lines | Back up the whole bank and inspect the named journal. Reindex cannot repair durable journal evidence. Do not prune or remove it to manufacture clean statistics. |
 
 ## Client cannot see the tools
