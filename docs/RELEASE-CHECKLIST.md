@@ -28,7 +28,7 @@ Real Windows installer and Ubuntu-under-WSL bootstrap/suite evidence is recorded
 
 | Actual environment | Host | Evidence to record | Status |
 | --- | --- | --- | --- |
-| Windows 11 / PowerShell | Codex | Install, tool calls, new-session scoped read/application, removal | Pending external trial |
+| Windows 11 / PowerShell | Codex | Install, tool calls, new-session scoped read/application, removal | Authenticated capture/fresh-session application passed with isolated guidance; native guidance/cold colleague trial pending |
 | Windows 11 / PowerShell | Claude Code | Same, independently authenticated | Pending external trial |
 | Supported macOS / record architecture | Codex | Same; paths with spaces | Pending external trial |
 | Supported macOS / record architecture | Claude Code | Same; preserve existing guidance | Pending external trial |

@@ -1,6 +1,6 @@
 # Validation and release status
 
-Checked **2026-11-01**. Product version **0.1.0**, release candidate. Code revision `4771b41` (subsequent commits may update evidence and packaging). The application is implemented and packaged; the complete six-environment authenticated-host acceptance is **not yet certified**.
+Checked **2026-11-01**. Product version **0.1.0**, release candidate. The application is implemented and packaged, including MCP argument-schema hardening found during actual Codex use; the complete six-environment authenticated-host acceptance is **not yet certified**.
 
 ## Executed checks
 
@@ -11,6 +11,8 @@ Checked **2026-11-01**. Product version **0.1.0**, release candidate. Code revis
 | Ubuntu 26.04 LTS x64, WSL2, CPython 3.12.15 | **77 passed, 2 skipped** | Actual Linux execution, real bootstrap/reinstallation, symlink confinement, local semantic inference and MCP |
 | Ubuntu native temporary filesystem | POSIX private-directory regression passed | New banks use private creation permissions; existing directory permissions are preserved. WSL NTFS mounts may ignore POSIX mode bits |
 | Installed Codex CLI | Accepted generated MCP configuration and confirmed removal in an isolated profile | Configuration compatibility only; no authenticated model/session recall was performed |
+| Windows, authenticated Codex CLI 0.164.0-alpha.11.1 | Two separate-session capture/recall trials passed; final trial saved on its first attempt | Actual model-driven MCP capture and fresh-session application, with synthetic data and isolated guidance; see boundaries below |
+| Final MCP schema/error change | Windows 3.12 full base suite: **73 passed, 6 skipped**; targeted MCP tests: **2 passed** on each of Windows 3.11 and Ubuntu 3.12 | Both modern/legacy protocols advertise valid enums, reject invalid status without writing, and return actionable domain-validation errors |
 | Built wheel in a new Windows venv | Capture → search → read → real MCP status passed | Installation is usable independently of the development environment |
 | Distribution build | Wheel and source distribution built; `twine check` passed | Structurally valid Python distributions using Core Metadata 2.4 |
 | Source ZIP | Allowlist, required installer/source contents and reproducibility test passed | Runtime profiles, model caches, operational journals, credentials and repository metadata are excluded |
@@ -30,6 +32,14 @@ Both trials used empty, separate uv, managed-Python, dependency and tool caches,
 These measure an **automated base-install/MCP/CLI path on this connection**, not a colleague's completion time and not an authenticated Claude/Codex model applying memory. They support the feasibility of the 5–7 minute target; they do not certify it universally. Agent authentication, host permission prompts, client restart and semantic-model provisioning are separate. The optional multilingual model downloaded in approximately 38 seconds in the development run; this is not a download-time guarantee.
 
 The restricted Windows development account initially could not acquire SChannel TLS credentials. The cold trial was rerun outside that restricted account with all writable runtime/profile/cache data still confined to the project test area. A real PowerShell 7 → Windows PowerShell 5 module-inheritance problem was reproduced and fixed before the successful cold trial.
+
+## Authenticated Codex behavior
+
+Actual Windows Codex sessions used the existing native login without the test driver reading or copying credentials. Each trial started with an empty synthetic bank. Session one saved a scoped, user-confirmed formatting preference containing an unusual marker. A new session received an ordinary status-update request without the marker or an instruction to recall it; it searched the bank and applied the saved preference. Distinct thread IDs and completed MCP calls were checked. The first trial also read the source explicitly; both reported use against its revision.
+
+The first trial exposed a real integration defect: `memory_remember` accepted unrestricted string arguments in its advertised schema, so the model guessed `confirmed`, and the SDK masked the core validation message. Public kind/status enums and expected `ToolError` responses now make the contract explicit. Modern/legacy regression tests first reproduced the missing enum and then passed. A second authenticated trial completed `memory_remember` on its first attempt, followed by successful fresh-session recall/application; its sessions took 13.89 and 13.72 seconds respectively.
+
+These trials used real authenticated Codex and genuine stdio MCP, with user configuration/AGENTS discovery disabled and an explicit synthetic-bank MCP registration. They establish host behavior, **not** native skill auto-discovery, a cold colleague onboarding time, or any Claude/macOS result. Private runtime logs and authentication material are excluded from distributions. The final base-suite skips above comprise the existing platform/missing-extra cases plus two explicit optional-model/installer opt-ins; the earlier full opt-in suite results remain separate evidence.
 
 ## Meaningful behavior covered
 
@@ -67,7 +77,7 @@ Semantic tests require explicit provisioning and `MAVERICK_TEST_MODEL_CACHE` poi
 ## Remaining release gates
 
 1. Execute the macOS core, installer and semantic checks on a real macOS host or hosted runner. This machine has no macOS environment.
-2. Execute all six OS × authenticated host trials: Windows, macOS, Ubuntu with Claude Code and Codex. In a fresh session, the agent must retrieve the saved source and apply its scoped preference. CLI config parsing and a direct MCP client are insufficient substitutes.
+2. Execute the complete six OS × authenticated onboarding trials: Windows, macOS, Ubuntu with Claude Code and Codex. Windows Codex capture/fresh-session application is now demonstrated under the isolated-guidance boundary above; its native guidance/cold colleague trial and the remaining combinations are pending. CLI config parsing and a direct MCP client are insufficient substitutes.
 3. Have a colleague follow only the quickstart and record time, permission prompts and confusion. Keep the existing-authenticated-agent and Git prerequisites explicit.
 4. Choose a public repository/registry destination and run the prepared CI before making a general production-ready claim. No remote, public repository or registry release was created during development.
 
