@@ -4,7 +4,12 @@ from test_bank import bank_class
 
 
 def git(path, *args):
-    return subprocess.run(["git", "-c", f"safe.directory={path.as_posix()}", "-C", str(path), *args], check=True, capture_output=True, text=True).stdout
+    return subprocess.run(
+        ["git", "-c", f"safe.directory={path.as_posix()}", "-C", str(path), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
 
 
 def test_snapshots_do_not_touch_parent_repository_index(tmp_path):

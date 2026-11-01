@@ -1,9 +1,10 @@
 import pytest
-
 from test_bank import bank_class
 
 
-@pytest.mark.parametrize("bad", ["../outside", "/etc/passwd", "C:\\private", "a:b", "..\\outside", "\\\\server\\share"])
+@pytest.mark.parametrize(
+    "bad", ["../outside", "/etc/passwd", "C:\\private", "a:b", "..\\outside", "\\\\server\\share"]
+)
 def test_memory_identifier_cannot_be_a_filesystem_escape(tmp_path, bad):
     bank = bank_class().initialize(tmp_path / "bank")
     with pytest.raises(ValueError):

@@ -29,7 +29,9 @@ def test_capture_requires_source_and_does_not_promote_inference(tmp_path):
     with pytest.raises(ValueError, match="source"):
         bank.remember("guess", "Maybe the user likes blue", source="")
     with pytest.raises(ValueError, match="hypothesis"):
-        bank.remember("guess", "Maybe blue", source="agent:guess", kind="hypothesis", status="user-confirmed")
+        bank.remember(
+            "guess", "Maybe blue", source="agent:guess", kind="hypothesis", status="user-confirmed"
+        )
     assert list((bank.root / "notes").glob("*.md")) == []
 
 
@@ -45,7 +47,11 @@ def test_reinitialize_preserves_notes_and_configuration(tmp_path):
 def test_two_cooperating_writers_do_not_lose_records(tmp_path):
     bank = bank_class().initialize(tmp_path / "bank")
     with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(lambda n: bank.remember(f"Note {n}", f"Payload {n}", source=f"test:{n}"), range(6)))
+        results = list(
+            pool.map(
+                lambda n: bank.remember(f"Note {n}", f"Payload {n}", source=f"test:{n}"), range(6)
+            )
+        )
     assert len({r["id"] for r in results}) == 6
     assert len(list((bank.root / "notes").glob("*.md"))) == 6
 
@@ -66,7 +72,9 @@ def test_manual_changes_are_read_from_authority(tmp_path):
     bank = bank_class().initialize(tmp_path / "bank")
     saved = bank.remember("Rule", "Old contents", source="user:1")
     path = Path(saved["path"])
-    path.write_text(path.read_text(encoding="utf-8").replace("Old contents", "New contents"), encoding="utf-8")
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("Old contents", "New contents"), encoding="utf-8"
+    )
     current = bank.read(saved["id"])
     assert current["body"] == "New contents"
     assert current["revision"] != saved["revision"]
