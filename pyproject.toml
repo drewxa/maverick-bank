@@ -30,6 +30,11 @@ dependencies = [
 [project.optional-dependencies]
 semantic = ["fastembed>=0.7,<1"]
 
+[project.urls]
+Repository = "https://github.com/drewxa/maverick-bank"
+Documentation = "https://github.com/drewxa/maverick-bank#readme"
+Issues = "https://github.com/drewxa/maverick-bank/issues"
+
 [project.scripts]
 maverick-bank = "maverick_bank.cli:main"
 

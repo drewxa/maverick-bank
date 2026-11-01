@@ -8,4 +8,4 @@ Write meaningful failing behavior tests before implementation. Run targeted test
 
 No hidden network requests or query-time downloads. Markdown is authority, events and Git history are durable, SQLite index is rebuildable. Do not conflate server-offered, bank-read and agent-declared-use events with actual model influence. No automatic semantic merges or truth promotion. Isolate Git versioning from all user repositories and global hooks/filters.
 
-Do not publish, push, or modify the owner's actual agent configuration as a side effect of development. Produce local release artifacts and instructions. Reviews must identify concrete behavior and reproduction; docs claims must match tested behavior.
+Do not publish, push, or modify actual agent configuration as a side effect of development without an explicit maintainer request. Produce local release artifacts and instructions. Reviews must identify concrete behavior and reproduction; docs claims must match tested behavior.

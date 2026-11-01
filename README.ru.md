@@ -2,7 +2,7 @@
 
 Общая локальная память для **Claude Code и Codex**: предпочтения, решения и уроки в обычных Markdown-файлах. Поиск возвращает выдержку, путь, строки, версию записи и даты. CLI и локальное MCP-подключение используют один банк.
 
-**Release candidate · 0.1.0.** Целевые системы — Windows, macOS и Ubuntu. Выполненные проверки и ограничения — в [VALIDATION](docs/VALIDATION.md); реальные испытания всех сочетаний ОС и клиентов — отдельное условие выпуска. Публичного адреса репозитория или пакета пока нет.
+**Release candidate · 0.1.0.** Целевые системы — Windows, macOS и Ubuntu. [Скачать ZIP выпуска](https://github.com/drewxa/maverick-bank/releases/download/v0.1.0-rc.3/maverick-bank-0.1.0.zip) · [Все выпуски](https://github.com/drewxa/maverick-bank/releases). Выполненные проверки и ограничения — в [VALIDATION](docs/VALIDATION.md); реальные испытания всех сочетаний ОС и клиентов — отдельное условие выпуска. Публикация в PyPI для установки не нужна.
 
 [English](README.md) · [Настройки](docs/CONFIGURATION.md) · [Приватность](docs/PRIVACY.md) · [Проблемы и решения](docs/TROUBLESHOOTING.md)
 

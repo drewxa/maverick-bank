@@ -84,6 +84,6 @@ On **2026-11-01**, the owner explicitly deferred unavailable platform/client and
 1. Execute the macOS core, installer and semantic checks on a real macOS host or hosted runner. This machine has no macOS environment.
 2. Execute the complete six OS × authenticated onboarding trials: Windows, macOS, Ubuntu with Claude Code and Codex. Windows Codex capture/fresh-session application is now demonstrated under the isolated-guidance boundary above; its native guidance/cold colleague trial and the remaining combinations are pending. CLI config parsing and a direct MCP client are insufficient substitutes.
 3. Have a colleague follow only the quickstart and record time, permission prompts and confusion. Keep the existing-authenticated-agent and Git prerequisites explicit.
-4. Choose a public repository/registry destination and run the prepared CI before making a general production-ready claim. No remote, public repository or registry release was created during development.
+4. Run the prepared hosted CI before making a general production-ready claim. Publication was subsequently authorized by the owner; the public repository is [drewxa/maverick-bank](https://github.com/drewxa/maverick-bank). Hosted CI results and release assets must be checked independently of repository creation. No PyPI registry publication is included.
 
 Distribute the completed implementation as a **release candidate** with this report for the owner's final acceptance. A certified production claim across all six combinations still requires the corresponding results.
