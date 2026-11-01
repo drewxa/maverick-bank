@@ -1,5 +1,7 @@
 # Privacy and threat boundary
 
+On a native POSIX filesystem, newly created bank/state directories use private creation permissions. Existing directory permissions are preserved. Windows ACLs and filesystems that ignore POSIX modes remain controlled by the operating system; select a private storage location.
+
 ## What stays local
 
 Maverick Bank stores notes, indexes, embeddings, configuration, event/operation journals and Git snapshots on your filesystem. The application has no analytics service, hosted memory service, automatic synchronization or remote inference provider. Normal search and reads do not download a model. The MCP connection is a child process over local stdio, without a listening network port or separate MCP account.

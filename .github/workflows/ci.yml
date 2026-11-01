@@ -20,11 +20,11 @@ jobs:
           version: '0.12.23'
           enable-cache: true
       - run: uv sync --locked --group dev --python ${{ matrix.python }}
-      - run: uv run ruff check src tests scripts
-      - run: uv run ruff format --check src tests scripts
-      - run: uv run pytest -q
+      - run: uv run --no-sync ruff check src tests scripts
+      - run: uv run --no-sync ruff format --check src tests scripts
+      - run: uv run --no-sync pytest -q
       - run: uv build
-      - run: uv run twine check dist/*
+      - run: uv run --no-sync twine check dist/*
       - name: Test the built wheel in an isolated tool environment
         shell: bash
         run: |
@@ -35,7 +35,7 @@ jobs:
       - name: Exercise platform installer in an isolated profile
         env:
           MAVERICK_TEST_INSTALLERS: '1'
-        run: uv run pytest tests/test_installers.py -q
+        run: uv run --no-sync pytest tests/test_installers.py -q
       - uses: actions/upload-artifact@v4
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
         with:
@@ -50,7 +50,7 @@ jobs:
           version: '0.12.23'
           enable-cache: true
       - run: uv sync --locked --extra semantic --group dev --python 3.12
-      - run: uv run maverick-bank init --bank .model-cache/ci-bank
-      - run: uv run maverick-bank semantic install --bank .model-cache/ci-bank
+      - run: uv run --no-sync maverick-bank init --bank .model-cache/ci-bank
+      - run: uv run --no-sync maverick-bank semantic install --bank .model-cache/ci-bank
       - shell: bash
-        run: MAVERICK_TEST_MODEL_CACHE="$PWD/.model-cache/ci-bank/.maverick/models" uv run pytest tests/test_semantic.py -q
+        run: MAVERICK_TEST_MODEL_CACHE="$PWD/.model-cache/ci-bank/.maverick/models" uv run --no-sync pytest tests/test_semantic.py -q

@@ -33,9 +33,9 @@ Files: package scaffold; `config.py`, `paths.py`, `notes.py`, `history.py`, `eve
 
 Interfaces: `Bank(root: Path)`; `Bank.initialize(root, **settings)`; `remember(title, body, source, scope='global', kind='fact', status='unverified', supersedes=None) -> dict`; `read(memory_id, start_line=None, end_line=None) -> dict`; `record_use(memory_id, revision, task_id='', agent='unknown', outcome='unknown') -> dict`. Structured results use JSON-compatible values, stable `id`, `revision`, `path` and UTC timestamps.
 
-- [ ] Add real filesystem/Git tests for capture/read, external edits, concurrent writers, confined paths, preserving unrelated staged changes and event durability; observe missing feature failures.
-- [ ] Implement strict config, locking, atomic notes, durable journals, isolated snapshots and bounded reads; run targeted tests then complete suite.
-- [ ] Commit coherent durable core and record evidence.
+- [x] Add real filesystem/Git tests for capture/read, external edits, concurrent writers, confined paths, preserving unrelated staged changes and event durability; observe missing feature failures.
+- [x] Implement strict config, locking, atomic notes, durable journals, isolated snapshots and bounded reads; run targeted tests then complete suite.
+- [x] Commit coherent durable core and record evidence.
 
 ## Task 2: Retrieval, temporal evidence and audits
 
@@ -43,10 +43,10 @@ Files: `index.py`, `embeddings.py`, `audit.py`; tests for retrieval, model lifec
 
 Interfaces: `Bank.search(query, limit=5, scope=None, include_superseded=False) -> dict` with `mode`, `semantic_status`, `results`; `Bank.reindex() -> dict`; `Bank.audit() -> dict`; `Bank.stats() -> dict`; `Bank.provision_semantic(model=None) -> dict`. Index stores chunk line spans/hashes. Semantic provider supports document and query embeddings and explicit provisioning.
 
-- [ ] Test exact/Unicode/paraphrase lookup, scope, deleted/changed authority, stale index recovery, supersession, deterministic audit candidates and honest missing-model state.
-- [ ] Implement SQLite FTS5 + cosine reciprocal-rank fusion, cached model metadata, explicit offline load; run suite.
-- [ ] Provision actual local multilingual model, run nonlexical retrieval and offline smoke; record measured limitations.
-- [ ] Commit retrieval/audit.
+- [x] Test exact/Unicode/paraphrase lookup, scope, deleted/changed authority, stale index recovery, supersession, deterministic audit candidates and honest missing-model state.
+- [x] Implement SQLite FTS5 + cosine reciprocal-rank fusion, cached model metadata, explicit offline load; run suite.
+- [x] Provision actual local multilingual model, run nonlexical retrieval and offline smoke; record measured limitations.
+- [x] Commit retrieval/audit.
 
 ## Task 3: CLI, MCP and client installation
 
@@ -54,23 +54,23 @@ Files: `cli.py`, `server.py`, `integrations.py`, packaged skill; `tests/test_cli
 
 Interfaces: CLI `init`, `remember`, `search`, `read`, `reindex`, `audit`, `stats`, `history`, `doctor`, `semantic install`, `install`, `uninstall`. Common `--bank PATH`, machine-readable JSON for tests/agents. MCP tools `memory_search`, `memory_read`, `memory_remember`, `memory_record_use`, `memory_audit`, `memory_status` call Bank; server uses `serve --bank PATH`.
 
-- [ ] Write failing subprocess CLI and real SDK stdio tests, plus realistic config roundtrip/conflict tests.
-- [ ] Implement wrappers, error handling and safe owned client configuration; do not install into the owner's actual host settings during tests.
-- [ ] Test real installed Codex configuration in an isolated temporary CODEX_HOME, clearly distinguishing it from authenticated model recall.
-- [ ] Commit integration.
+- [x] Write failing subprocess CLI and real SDK stdio tests, plus realistic config roundtrip/conflict tests.
+- [x] Implement wrappers, error handling and safe owned client configuration; do not install into the owner's actual host settings during tests.
+- [x] Test real installed Codex configuration in an isolated temporary CODEX_HOME, clearly distinguishing it from authenticated model recall.
+- [x] Commit integration.
 
 ## Task 4: Distribution and onboarding
 
 Files: `scripts/install.ps1`, `scripts/install.sh`, `scripts/smoke.py`, `.github/workflows/ci.yml`, `.github/workflows/release.yml`, docs, license/security/changelog.
 
-- [ ] Write installer behavior tests against temporary destinations and existing install state; preserve data on uninstall.
-- [ ] Package wheel/source distribution; install clean wheel with runtime absolute paths; measure init-to-first-recall and full installation separately.
-- [ ] Add Windows/macOS/Ubuntu CI tests, package checks, offline base smoke and opt-in semantic test. Release artifact workflow emits versioned archives/checksums without private data.
-- [ ] Publish truthful quickstarts and configuration reference; commit distribution.
+- [x] Write installer behavior tests against temporary destinations and existing install state; preserve data on uninstall.
+- [x] Package wheel/source distribution; install clean wheel with runtime absolute paths; measure init-to-first-recall and full installation separately.
+- [x] Add Windows/macOS/Ubuntu CI tests, package checks, offline base smoke and opt-in semantic test. Release artifact workflow emits versioned archives/checksums without private data.
+- [x] Publish truthful quickstarts and configuration reference; commit distribution.
 
 ## Task 5: Independent review and release candidate
 
-- [ ] Fresh-context reviewers examine product acceptance, architecture/data safety and integrations; report concrete findings with evidence.
-- [ ] Reproduce material defects with failing tests, fix them, rerun affected and complete suite.
-- [ ] Build final artifacts, record checksums and test matrix in `docs/VALIDATION.md`; distinguish executed, simulated and pending checks.
-- [ ] Finish in a clean committed release branch; provide concise result and real limitations, without claiming unexecuted platform trials passed.
+- [x] Fresh-context reviewers examine product acceptance, architecture/data safety and integrations; report concrete findings with evidence.
+- [x] Reproduce material defects with failing tests, fix them, rerun affected and complete suite.
+- [x] Build final artifacts, record checksums and test matrix in `docs/VALIDATION.md`; distinguish executed, simulated and pending checks.
+- [x] Finish in a clean committed release branch; provide concise result and real limitations, without claiming unexecuted platform trials passed.
