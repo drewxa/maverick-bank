@@ -122,8 +122,10 @@ def test_real_installer_is_idempotent_and_uses_isolated_profiles(tmp_path):
             shell,
             "-NoProfile",
             "-Command",
-            activation + "; (Get-Command uv -CommandType Application).Source; "
-            "(Get-Command maverick-bank -CommandType Application).Source",
+            activation + "; Get-Command uv -CommandType Application | "
+            "Select-Object -First 1 -ExpandProperty Source; "
+            "Get-Command maverick-bank -CommandType Application | "
+            "Select-Object -First 1 -ExpandProperty Source",
         ]
     else:
         resolve_command = ["sh", "-c", activation + "\ncommand -v uv\ncommand -v maverick-bank"]
