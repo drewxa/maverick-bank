@@ -1,5 +1,7 @@
 # Maverick Bank
 
+Give your agent a memory of how you work: your preferences, past decisions and lessons from previous tasks. Maverick Bank helps Claude Code and Codex pick up work across sessions and agent switches without preparing a handoff every time. Spend less time repeating yourself, reconstructing context and revisiting the same mistakes, and get an assistant that can work with your history and preferences. The memory stays on your computer, where you can read, edit and shape it.
+
 Local, editable long-term memory shared by **Claude Code and Codex**. Save durable preferences, decisions and lessons as Markdown; retrieve excerpts with their source, lines, revision and dates. The bank runs on your computer through a CLI and a local MCP connection.
 
 **Release candidate · 0.1.0.** Intended for Windows, macOS and Ubuntu. [Download the release ZIP](https://github.com/drewxa/maverick-bank/releases/download/v0.1.0-rc.3/maverick-bank-0.1.0.zip) or [browse releases](https://github.com/drewxa/maverick-bank/releases). See [validation evidence](docs/VALIDATION.md) and the [release checklist](docs/RELEASE-CHECKLIST.md) for executed checks and pending host/platform trials. No PyPI publication is required.
