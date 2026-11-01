@@ -12,5 +12,6 @@
 - Explicit MCP kind/status enums and actionable validation errors, verified in actual authenticated Codex capture/fresh-session recall.
 - Installation scripts, configuration/privacy/recovery documentation and release verification checklist.
 - Copyable shell-specific PATH activation for both executables after cold installs, including custom paths with spaces and apostrophes.
+- Public GitHub repository/releases and private security reporting; hosted Windows/macOS/Ubuntu Python 3.11/3.12 matrix, real installers and Ubuntu semantic job verified.
 
 This is a candidate description, not a claim that every target platform and authenticated host trial has passed. See [validation evidence](docs/VALIDATION.md) for actual checks and limitations. No public registry publication is included.
