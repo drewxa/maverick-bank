@@ -72,4 +72,11 @@ else
     if [ "$semantic" -eq 1 ]; then "$application" semantic install; fi
     "$application" doctor --mcp
 fi
-printf '%s\n' "Installed: $application" 'Start a new Claude Code or Codex session and follow the README first-memory check.'
+uv_bin_directory=$(dirname -- "$uv_executable")
+path_prefix="$uv_bin_directory:$bin_directory"
+quoted_prefix=$(printf '%s' "$path_prefix" | sed "s/'/'\\\\''/g")
+printf '%s\n' "Installed: $application" \
+    'To use uv and maverick-bank by name in this terminal, copy this line:' \
+    "PATH command: export PATH='$quoted_prefix':\"\$PATH\"" \
+    "For future terminals, add these directories to PATH in your shell profile: $path_prefix" \
+    'Start a new Claude Code or Codex session and follow the README first-memory check.'

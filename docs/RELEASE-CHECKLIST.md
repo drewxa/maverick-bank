@@ -2,6 +2,8 @@
 
 This is a gate, not evidence of completion. Record results, versions, dates, conditions and artifact hashes in [VALIDATION.md](VALIDATION.md). An unchecked item is pending; configuration simulation, a protocol handshake and authenticated agent recall are distinct forms of evidence.
 
+**Owner decision, 2026-11-01:** unavailable platform/client and colleague trials are deferred to the owner's final acceptance. They do not block delivery of the implemented candidate. Keep those results pending until actually executed; use VALIDATION for completed local evidence.
+
 ## Candidate artifacts and local behavior
 
 - [ ] Build wheel, source distribution and downloadable archive from the final source revision; record checksums.

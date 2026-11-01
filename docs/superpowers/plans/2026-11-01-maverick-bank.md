@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-01-maverick-bank-design.md`
 
+**Owner clarification, 2026-11-01:** finish and hand over the implementation without waiting for unavailable macOS/Claude/colleague trials. The owner will perform final acceptance later. These checks remain unexecuted, but are not a blocker for delivery of the completed release candidate.
+
 ## Global Constraints
 
 - Windows, macOS, Ubuntu; Claude Code and Codex. First useful base setup target 5–7 minutes, measured conditions recorded.

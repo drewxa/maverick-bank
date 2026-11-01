@@ -47,7 +47,7 @@ def test_real_installer_is_idempotent_and_uses_isolated_profiles(tmp_path):
     uv = shutil.which("uv")
     if not uv:
         pytest.skip("uv required for this opt-in installer trial")
-    home = tmp_path / "Colleague profile with spaces"
+    home = tmp_path / "Colleague's profile with spaces"
     home.mkdir()
     bank = home / "Моя память"
     bin_dir = home / "tools-bin"
@@ -101,6 +101,39 @@ def test_real_installer_is_idempotent_and_uses_isolated_profiles(tmp_path):
     first = subprocess.run(command, env=env, capture_output=True, encoding="utf-8", timeout=300)
     assert first.returncode == 0, first.stdout + first.stderr
     assert executable.is_file()
+    activation = next(
+        (
+            line.removeprefix("PATH command: ")
+            for line in first.stdout.splitlines()
+            if line.startswith("PATH command: ")
+        ),
+        None,
+    )
+    assert activation, "Cold installs must explain how to use both CLI executables by name"
+    excluded = {str(Path(uv).parent).casefold(), str(bin_dir).casefold()}
+    without_tools = {
+        **env,
+        "PATH": os.pathsep.join(
+            part for part in env["PATH"].split(os.pathsep) if part.casefold() not in excluded
+        ),
+    }
+    if sys.platform == "win32":
+        resolve_command = [
+            shell,
+            "-NoProfile",
+            "-Command",
+            activation + "; (Get-Command uv -CommandType Application).Source; "
+            "(Get-Command maverick-bank -CommandType Application).Source",
+        ]
+    else:
+        resolve_command = ["sh", "-c", activation + "\ncommand -v uv\ncommand -v maverick-bank"]
+    activated = subprocess.run(
+        resolve_command, env=without_tools, capture_output=True, encoding="utf-8", timeout=30
+    )
+    assert activated.returncode == 0, activated.stdout + activated.stderr
+    resolved = activated.stdout.strip().splitlines()
+    assert Path(resolved[-2]).resolve() == Path(uv).resolve()
+    assert Path(resolved[-1]).resolve() == executable.resolve()
     second = subprocess.run(command, env=env, capture_output=True, encoding="utf-8", timeout=300)
     assert second.returncode == 0, second.stdout + second.stderr
     saved = subprocess.run(

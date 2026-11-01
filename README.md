@@ -24,6 +24,8 @@ sh scripts/install.sh --source . --clients codex claude
 
 The scripts provision uv when needed, install the package and configure selected clients. Choose only `codex` or `claude` if you use one. The default bank is `~/.maverick-bank`; choose another with `-Bank "path"` on Windows or `--bank "path"` on macOS/Ubuntu. A downloaded wheel can be supplied as the source instead. Git history stays local.
 
+For CLI commands below, copy the installer's final `PATH command:` line into your terminal, without that label. It makes both `uv` and `maverick-bank` available by name, including after a fresh installation. Save the displayed directories in your user PATH/shell profile for future terminals; reopening a terminal alone does not add them. Agent connections use absolute paths and work independently of this CLI setup.
+
 For a custom bank, subsequent CLI commands must use the same `--bank PATH` or set `MAVERICK_BANK_HOME` to that directory.
 
 From a source checkout with [uv](https://docs.astral.sh/uv/) already installed:

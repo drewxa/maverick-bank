@@ -40,6 +40,8 @@ Provider-neutral skill plus a concise owned startup instruction block explain lo
 
 ## Acceptance and release evidence
 
+The owner's subsequent instruction on **2026-11-01** defers unavailable platform/client and human onboarding trials to final acceptance. Finish local implementation, reviews and distribution now; disclose the deferred trials rather than blocking candidate delivery or claiming they passed.
+
 1. Fresh wheel installs in a clean venv into a Unicode path with spaces; CLI init/capture/search/read/history/audit/event report work without project cwd assumptions.
 2. Real MCP process lists tools and performs capture/search/read via the official SDK. Stdout is protocol-only and tool errors are actionable.
 3. Two processes capture without losing records; traversal/symlink attempts fail; Unicode and large/error inputs are bounded; manual edits and deletion refresh retrieval; index deletion preserves durable state; superseded records are excluded from normal current recall.

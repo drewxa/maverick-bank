@@ -69,4 +69,9 @@ if ($Semantic) {
 & $application doctor @bankArguments --mcp
 if ($LASTEXITCODE -ne 0) { throw 'Installation requires attention; see the doctor report above.' }
 Write-Host "Installed: $application"
+$pathPrefix = ((Split-Path -Parent $uvExecutable), $binDirectory | Select-Object -Unique) -join [IO.Path]::PathSeparator
+$quotedPrefix = ($pathPrefix + [IO.Path]::PathSeparator).Replace("'", "''")
+Write-Host 'To use uv and maverick-bank by name in this PowerShell terminal, copy this line:'
+Write-Host ('PATH command: $env:Path = ' + "'" + $quotedPrefix + "'" + ' + $env:Path')
+Write-Host "For future terminals, add these directories to your user PATH: $pathPrefix"
 Write-Host 'Start a new Claude Code or Codex session. Follow the README first-memory check; no API key is needed for the bank.'

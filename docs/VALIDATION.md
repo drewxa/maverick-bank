@@ -13,6 +13,7 @@ Checked **2026-11-01**. Product version **0.1.0**, release candidate. The applic
 | Installed Codex CLI | Accepted generated MCP configuration and confirmed removal in an isolated profile | Configuration compatibility only; no authenticated model/session recall was performed |
 | Windows, authenticated Codex CLI 0.164.0-alpha.11.1 | Two separate-session capture/recall trials passed; final trial saved on its first attempt | Actual model-driven MCP capture and fresh-session application, with synthetic data and isolated guidance; see boundaries below |
 | Final MCP schema/error change | Windows 3.12 full base suite: **73 passed, 6 skipped**; targeted MCP tests: **2 passed** on each of Windows 3.11 and Ubuntu 3.12 | Both modern/legacy protocols advertise valid enums, reject invalid status without writing, and return actionable domain-validation errors |
+| Final handoff, Windows 3.12 | **75 passed, 4 skipped**, including actual model and installer opt-ins | Complete suite after the final PATH onboarding fix; separate installer tests passed **2/2** on Windows and **2/2** on Ubuntu |
 | Built wheel in a new Windows venv | Capture → search → read → real MCP status passed | Installation is usable independently of the development environment |
 | Distribution build | Wheel and source distribution built; `twine check` passed | Structurally valid Python distributions using Core Metadata 2.4 |
 | Source ZIP | Allowlist, required installer/source contents and reproducibility test passed | Runtime profiles, model caches, operational journals, credentials and repository metadata are excluded |
@@ -32,6 +33,8 @@ Both trials used empty, separate uv, managed-Python, dependency and tool caches,
 These measure an **automated base-install/MCP/CLI path on this connection**, not a colleague's completion time and not an authenticated Claude/Codex model applying memory. They support the feasibility of the 5–7 minute target; they do not certify it universally. Agent authentication, host permission prompts, client restart and semantic-model provisioning are separate. The optional multilingual model downloaded in approximately 38 seconds in the development run; this is not a download-time guarantee.
 
 The restricted Windows development account initially could not acquire SChannel TLS credentials. The cold trial was rerun outside that restricted account with all writable runtime/profile/cache data still confined to the project test area. A real PowerShell 7 → Windows PowerShell 5 module-inheritance problem was reproduced and fixed before the successful cold trial.
+
+Final independent handoff review found that an unmanaged uv bootstrap leaves executable directories outside PATH, so a successful absolute-path installation did not guarantee the README's subsequent commands worked by name. Both installers now print a shell-specific activation command containing the exact uv/application directories. Regression tests first failed for missing activation, then executed the printed command with both directories removed from PATH and verified that both executable names resolve. Windows and Ubuntu tests include spaces and an apostrophe in custom profile paths, repeated install, capture/recall and removal without deleting notes. Quickstarts explain current-session activation and persistent PATH setup; the installers do not silently modify shell profiles or the Windows user registry. Product review found no remaining implementation gaps; integration re-review confirmed this finding closed.
 
 ## Authenticated Codex behavior
 
@@ -74,11 +77,13 @@ Semantic tests require explicit provisioning and `MAVERICK_TEST_MODEL_CACHE` poi
 
 `.github/workflows/ci.yml` prepares a Windows/macOS/Ubuntu × Python 3.11/3.12 matrix and a separate actual-model job. `.github/workflows/release.yml` builds artifacts; it does not publish to a registry. The hosted workflows have **not been executed** from this local repository.
 
-## Remaining release gates
+## Final acceptance deferred by the owner
+
+On **2026-11-01**, the owner explicitly deferred unavailable platform/client and colleague trials until final acceptance and asked development to continue. They do not block handing over the implemented candidate. The missing evidence below remains visible; this decision does not turn unexecuted checks into passing results. Implementation, local review and packaging are complete; no additional features are required merely to compensate for unavailable test environments.
 
 1. Execute the macOS core, installer and semantic checks on a real macOS host or hosted runner. This machine has no macOS environment.
 2. Execute the complete six OS × authenticated onboarding trials: Windows, macOS, Ubuntu with Claude Code and Codex. Windows Codex capture/fresh-session application is now demonstrated under the isolated-guidance boundary above; its native guidance/cold colleague trial and the remaining combinations are pending. CLI config parsing and a direct MCP client are insufficient substitutes.
 3. Have a colleague follow only the quickstart and record time, permission prompts and confusion. Keep the existing-authenticated-agent and Git prerequisites explicit.
 4. Choose a public repository/registry destination and run the prepared CI before making a general production-ready claim. No remote, public repository or registry release was created during development.
 
-Until these gates pass, distribute as a **release candidate** with this report, not as a certified production release on all six combinations.
+Distribute the completed implementation as a **release candidate** with this report for the owner's final acceptance. A certified production claim across all six combinations still requires the corresponding results.
