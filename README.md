@@ -1,6 +1,12 @@
 # Maverick Bank
 
-Give your agent a memory of how you work: your preferences, past decisions and lessons from previous tasks. Maverick Bank helps Claude Code and Codex pick up work across sessions and agent switches without preparing a handoff every time. Spend less time repeating yourself, reconstructing context and revisiting the same mistakes, and get an assistant that can work with your history and preferences. The memory stays on your computer, where you can read, edit and shape it.
+You have already explained your priorities, chosen an approach and worked out why the alternatives would not fit. Maverick Bank helps carry that experience into the next task: your agent can find your preferences, earlier decisions and the reasoning behind them, even in a new chat or after switching from Claude Code to Codex. Spend less time rebuilding context, repeating corrections and preparing a handoff for every new session.
+
+**Example scenario.** A month ago, you and Claude decided against a separate task queue: you maintain the project alone and want less infrastructure to operate. Now you open a fresh Codex chat and ask for background processing. By finding that saved decision, the agent can account for something you did not think to mention:
+
+> “You previously ruled out a separate queue to keep maintenance simple. I'll start with an option that needs no additional service and check whether those earlier constraints still fit this task.”
+
+Work with your agents becomes more personal as saved agreements and experience inform later decisions. You can inspect the record behind a suggestion, see its source and modification dates, and correct or extend it. The memory is stored locally and stays under your control.
 
 Local, editable long-term memory shared by **Claude Code and Codex**. Save durable preferences, decisions and lessons as Markdown; retrieve excerpts with their source, lines, revision and dates. The bank runs on your computer through a CLI and a local MCP connection.
 
