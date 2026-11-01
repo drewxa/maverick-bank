@@ -41,8 +41,8 @@ def test_install_preserves_foreign_configuration_and_reinstalls_without_writes(e
         "command": sys.executable,
         "args": ["-m", "maverick_bank", "serve", "--bank", str(bank.resolve())],
     }
-    assert "# retained comment" in (codex / "config.toml").read_text()
-    registered = json.loads((home / ".claude.json").read_text())
+    assert "# retained comment" in (codex / "config.toml").read_text(encoding="utf-8")
+    registered = json.loads((home / ".claude.json").read_text(encoding="utf-8"))
     assert registered["theme"] == "dark"
     assert registered["mcpServers"]["other"] == {"command": "other"}
     assert registered["mcpServers"]["maverick-bank"]["type"] == "stdio"
@@ -74,7 +74,7 @@ def test_uninstall_restores_original_bytes_and_keeps_memory(env):
     assert instruction.read_bytes() == b"User guidance\r\n"
     assert not (home / ".claude.json").exists()
     assert not (home / ".agents/skills/maverick-bank/SKILL.md").exists()
-    assert note.read_text() == "durable memory"
+    assert note.read_text(encoding="utf-8") == "durable memory"
     assert api().uninstall_clients(**args)["changed"] is False
 
 
@@ -92,7 +92,7 @@ def test_foreign_server_name_is_not_claimed_or_overwritten(env, client, relative
     path.write_text(text)
     with pytest.raises(ValueError, match="conflict|already|owned"):
         api().install_clients(bank, [client], home=home)
-    assert path.read_text() == text
+    assert path.read_text(encoding="utf-8") == text
     assert not (bank / ".maverick/integrations.json").exists()
 
 
@@ -111,7 +111,7 @@ def test_preflight_refuses_malformed_config_without_partial_client_install(env, 
     target.write_text(text)
     with pytest.raises(ValueError, match="[Mm]alformed|[Ii]nvalid"):
         api().install_clients(bank, ["codex", "claude"], home=home)
-    assert target.read_text() == text
+    assert target.read_text(encoding="utf-8") == text
     assert not (home / ".agents/skills/maverick-bank/SKILL.md").exists()
 
 
@@ -133,10 +133,10 @@ def test_uninstall_keeps_unrelated_edits_and_refuses_modified_owned_blocks(env):
     assert config.read_bytes() == before
     instruction.write_text(original_instruction + "\nUser addition\n", encoding="utf-8", newline="")
     api().uninstall_clients(**args)
-    remaining = tomllib.loads(config.read_text())
+    remaining = tomllib.loads(config.read_text(encoding="utf-8"))
     assert remaining["project"]["name"] == "new"
     assert "maverick-bank" not in remaining.get("mcp_servers", {})
-    assert instruction.read_text() == "\nUser addition\n"
+    assert instruction.read_text(encoding="utf-8") == "\nUser addition\n"
 
 
 def test_modified_owned_server_and_skill_are_not_removed(env):
@@ -150,7 +150,7 @@ def test_modified_owned_server_and_skill_are_not_removed(env):
         api().uninstall_clients(**args)
     skill.write_bytes(original)
     path = home / ".claude.json"
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     data["mcpServers"]["maverick-bank"]["args"].append("--human-change")
     path.write_text(json.dumps(data))
     with pytest.raises(ValueError, match="modified|changed"):
@@ -174,11 +174,11 @@ def test_project_scope_stays_in_project_and_respects_codex_override(env):
     assert (project / ".mcp.json").exists()
     assert (project / ".agents/skills/maverick-bank/SKILL.md").exists()
     assert (project / ".claude/skills/maverick-bank/SKILL.md").exists()
-    assert "Maverick Bank" in override.read_text()
+    assert "Maverick Bank" in override.read_text(encoding="utf-8")
     assert not (project / "AGENTS.md").exists()
     assert not (home / ".codex").exists()
     api().uninstall_clients(**args)
-    assert override.read_text() == "Higher priority guidance\n"
+    assert override.read_text(encoding="utf-8") == "Higher priority guidance\n"
 
 
 def test_codex_home_environment_and_explicit_override(env, monkeypatch):
@@ -250,7 +250,7 @@ def test_claude_guidance_keeps_existing_instruction_discovery(env):
     agents = project / "AGENTS.md"
     agents.write_text("Existing shared instruction chain\n")
     api().install_clients(bank, ["claude"], scope="project", project=project, home=home)
-    assert agents.read_text() == "Existing shared instruction chain\n"
+    assert agents.read_text(encoding="utf-8") == "Existing shared instruction chain\n"
     assert not (project / "CLAUDE.md").exists()
     assert (project / ".claude/rules/maverick-bank.md").exists()
     api().uninstall_clients(bank, ["claude"], scope="project", project=project, home=home)
@@ -266,7 +266,7 @@ def test_reinstall_detects_new_override_that_shadows_installed_instructions(env)
     with pytest.raises(ValueError, match="shadow|override|instruction"):
         api().install_clients(bank, ["codex"], home=home)
     api().uninstall_clients(bank, ["codex"], home=home)
-    assert override.read_text() == "New overriding guidance"
+    assert override.read_text(encoding="utf-8") == "New overriding guidance"
 
 
 def test_failed_write_rolls_back_all_client_files(env, monkeypatch):
