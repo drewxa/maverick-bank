@@ -1,0 +1,56 @@
+name: Test and package
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.23'
+          enable-cache: true
+      - run: uv sync --locked --group dev --python ${{ matrix.python }}
+      - run: uv run ruff check src tests scripts
+      - run: uv run ruff format --check src tests scripts
+      - run: uv run pytest -q
+      - run: uv build
+      - run: uv run twine check dist/*
+      - name: Test the built wheel in an isolated tool environment
+        shell: bash
+        run: |
+          uv venv .wheel-test --python ${{ matrix.python }}
+          if [ "$RUNNER_OS" = "Windows" ]; then PY=.wheel-test/Scripts/python.exe; else PY=.wheel-test/bin/python; fi
+          uv pip install --python "$PY" dist/*.whl
+          "$PY" scripts/smoke.py
+      - name: Exercise platform installer in an isolated profile
+        env:
+          MAVERICK_TEST_INSTALLERS: '1'
+        run: uv run pytest tests/test_installers.py -q
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
+        with:
+          name: python-distributions
+          path: dist/*
+  semantic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.23'
+          enable-cache: true
+      - run: uv sync --locked --extra semantic --group dev --python 3.12
+      - run: uv run maverick-bank init --bank .model-cache/ci-bank
+      - run: uv run maverick-bank semantic install --bank .model-cache/ci-bank
+      - shell: bash
+        run: MAVERICK_TEST_MODEL_CACHE="$PWD/.model-cache/ci-bank/.maverick/models" uv run pytest tests/test_semantic.py -q

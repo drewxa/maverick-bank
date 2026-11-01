@@ -10,5 +10,9 @@ build/
 .superpowers/
 .test-work/
 .model-cache/
+.cache/
+.tools/
+.venv-ubuntu/
+.uv-cache-ubuntu/
 .coverage
 htmlcov/

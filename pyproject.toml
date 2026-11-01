@@ -38,15 +38,17 @@ dev = ["pytest>=8.3,<10", "pytest-asyncio>=0.25,<2", "ruff>=0.11,<1", "build>=1.
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/maverick_bank"]
+core-metadata-version = "2.4"
 
 [tool.hatch.build.targets.sdist]
 include = ["src", "tests", "scripts", "docs", "README*", "LICENSE", "SECURITY.md", "CHANGELOG.md", "pyproject.toml", "uv.lock", ".github"]
+core-metadata-version = "2.4"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-markers = ["semantic: needs explicitly provisioned local model"]
+markers = ["semantic: needs explicitly provisioned local model", "installer: provisions an isolated tool environment; explicit opt-in"]
 
 [tool.ruff]
 target-version = "py311"
